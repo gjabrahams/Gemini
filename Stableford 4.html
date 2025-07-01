@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Scoring System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-section h3 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-col {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #2a5298, #1e3c72);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+
+        .scorecard {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .scorecard-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .scorecard-table th,
+        .scorecard-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .scorecard-table th {
+            background: linear-gradient(135deg, #2a5298, #1e3c72);
+            color: white;
+            font-weight: 600;
+        }
+
+        .scorecard-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .score-input {
+            width: 60px;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #2a5298;
+        }
+
+        .summary-card h4 {
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .team-summary {
+            background: linear-gradient(135deg, #e8f5e8, #d4edda);
+            border-left-color: #28a745;
+        }
+
+        .export-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #2a5298, #1e3c72);
+            color: white;
+            border-color: #2a5298;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .summary-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⛳ Golf Scoring System</h1>
+            <p>Professional Golf Scorecard with Betterball Support</p>
+        </div>
+
+        <div class="card" id="setup">
+            <div class="form-section">
+                <h3>Course Selection</h3>
+                <div class="form-group">
+                    <label for="course">Select Course:</label>
+                    <select id="course" onchange="toggleCustomCourse()">
+                        <option value="">Choose a course...</option>
+                        <optgroup label="Western Cape Courses">
+                            <option value="langebaan">Langebaan Golf & Sports Club</option>
+                            <option value="de-zalze">De Zalze Golf Estate</option>
+                            <option value="metropolitan">Metropolitan Golf Club</option>
+                            <option value="vredenburg">Vredenburg Golf Club</option>
+                        </optgroup>
+                        <option value="custom">🏗️ Create Custom Course</option>
+                    </select>
+                </div>
+
+                <div id="customCourseConfig" class="hidden" style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 2px dashed #2a5298;">
+                    <h4 style="color: #2a5298; margin-bottom: 15px;">🏗️ Custom Course Configuration</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label for="customCourseName">Course Name:</label>
+                            <input type="text" id="customCourseName" placeholder="Enter course name">
+                        </div>
+                        <div class="form-col">
+                            <label for="customCourseLocation">Location (Optional):</label>
+                            <input type="text" id="customCourseLocation" placeholder="City, Province/State">
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                        <h5 style="color: #555; margin-bottom: 10px;">Hole Configuration:</h5>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                                <thead>
+                                    <tr style="background: #2a5298; color: white;">
+                                        <th style="padding: 10px; text-align: center;">Hole</th>
+                                        <th style="padding: 10px; text-align: center;">Par</th>
+                                        <th style="padding: 10px; text-align: center;">Stroke Index</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customHolesTable">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button type="button" class="btn" onclick="resetCustomCourse()">Reset to Par 4s</button>
+                        <button type="button" class="btn" onclick="autoGenerateSI()">Auto-Generate Stroke Index</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Game Mode</h3>
+                <div class="mode-toggle">
+                    <div class="mode-btn active" onclick="setMode('individual')">
+                        <strong>Individual</strong><br>
+                        <small>Track individual scores and points</small>
+                    </div>
+                    <div class="mode-btn" onclick="setMode('betterball')">
+                        <strong>Betterball</strong><br>
+                        <small>Team format (2 vs 2)</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Player Information</h3>
+                <div class="form-group">
+                    <label for="numPlayers">Number of Players:</label>
+                    <select id="numPlayers" onchange="togglePlayerInputs()">
+                        <option value="1">1 Player</option>
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4" selected>4 Players</option>
+                    </select>
+                </div>
+                
+                <div id="playerInputs">
+                    <div class="form-row player-input-row" id="player1Row">
+                        <div class="form-col">
+                            <label for="player1Name">Player 1 Name:</label>
+                            <input type="text" id="player1Name" placeholder="Enter name">
+                        </div>
+                        <div class="form-col">
+                            <label for="player1Handicap">Handicap:</label>
+                            <input type="number" id="player1Handicap" placeholder="0" min="0" max="54">
+                        </div>
+                    </div>
+                    <div class="form-row player-input-row" id="player2Row">
+                        <div class="form-col">
+                            <label for="player2Name">Player 2 Name:</label>
+                            <input type="text" id="player2Name" placeholder="Enter name">
+                        </div>
+                        <div class="form-col">
+                            <label for="player2Handicap">Handicap:</label>
+                            <input type="number" id="player2Handicap" placeholder="0" min="0" max="54">
+                        </div>
+                    </div>
+                    <div class="form-row player-input-row" id="player3Row">
+                        <div class="form-col">
+                            <label for="player3Name">Player 3 Name:</label>
+                            <input type="text" id="player3Name" placeholder="Enter name">
+                        </div>
+                        <div class="form-col">
+                            <label for="player3Handicap">Handicap:</label>
+                            <input type="number" id="player3Handicap" placeholder="0" min="0" max="54">
+                        </div>
+                    </div>
+                    <div class="form-row player-input-row" id="player4Row">
+                        <div class="form-col">
+                            <label for="player4Name">Player 4 Name:</label>
+                            <input type="text" id="player4Name" placeholder="Enter name">
+                        </div>
+                        <div class="form-col">
+                            <label for="player4Handicap">Handicap:</label>
+                            <input type="number" id="player4Handicap" placeholder="0" min="0" max="54">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <div class="card hidden" id="scorecard">
+            <div class="form-section">
+                <h3 id="scorecardTitle">Scorecard</h3>
+                <div class="scorecard">
+                    <table class="scorecard-table" id="scorecardTable">
+                        </table>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <button class="btn" onclick="calculateScores()">Calculate Scores</button>
+                <button class="btn btn-warning" onclick="resetGame()">New Game</button>
+            </div>
+        </div>
+
+        <div class="card hidden" id="summary">
+            <div class="form-section">
+                <h3>Final Summary</h3>
+                <div class="summary-section" id="summaryContent">
+                    </div>
+            </div>
+
+            <div class="export-section">
+                <button class="btn btn-success" onclick="exportToPDF()">📄 Export to PDF</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📊 Export to Excel</button>
+                <button class="btn btn-warning" onclick="resetGame()">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameData = {
+            course: '',
+            mode: 'individual',
+            players: [],
+            holes: [],
+            scores: {},
+            customCourse: null
+        };
+
+        const courseData = {
+            'langebaan': {
+                name: 'Langebaan Golf & Sports Club',
+                location: 'Langebaan, Western Cape',
+                holes: [
+                    {par: 4, si: 11}, {par: 4, si: 5}, {par: 3, si: 15}, {par: 5, si: 1},
+                    {par: 4, si: 7}, {par: 4, si: 13}, {par: 3, si: 17}, {par: 4, si: 3},
+                    {par: 5, si: 9}, {par: 4, si: 12}, {par: 4, si: 6}, {par: 3, si: 16},
+                    {par: 5, si: 2}, {par: 4, si: 8}, {par: 4, si: 10}, {par: 4, si: 4},
+                    {par: 3, si: 18}, {par: 5, si: 14}
+                ]
+            },
+            'de-zalze': {
+                name: 'De Zalze Golf Estate',
+                location: 'Stellenbosch, Western Cape',
+                holes: [
+                    {par: 4, si: 9}, {par: 4, si: 13}, {par: 5, si: 3}, {par: 3, si: 17},
+                    {par: 4, si: 5}, {par: 4, si: 11}, {par: 3, si: 15}, {par: 4, si: 1},
+                    {par: 5, si: 7}, {par: 4, si: 14}, {par: 4, si: 6}, {par: 3, si: 18},
+                    {par: 5, si: 2}, {par: 4, si: 10}, {par: 4, si: 4}, {par: 4, si: 12},
+                    {par: 3, si: 16}, {par: 5, si: 8}
+                ]
+            },
+            'metropolitan': {
+                name: 'Metropolitan Golf Club',
+                location: 'Cape Town, Western Cape',
+                holes: [
+                    {par: 4, si: 7}, {par: 4, si: 1}, {par: 3, si: 13}, {par: 4, si: 9},
+                    {par: 5, si: 3}, {par: 4, si: 11}, {par: 3, si: 17}, {par: 4, si: 5},
+                    {par: 5, si: 15}, {par: 4, si: 16}, {par: 4, si: 2}, {par: 3, si: 18},
+                    {par: 5, si: 4}, {par: 4, si: 10}, {par: 4, si: 6}, {par: 4, si: 12},
+                    {par: 3, si: 14}, {par: 5, si: 8}
+                ]
+            },
+            'vredenburg': {
+                name: 'Vredenburg Golf Club',
+                location: 'Vredenburg, Western Cape',
+                holes: [
+                    {par: 4, si: 10}, {par: 4, si: 4}, {par: 3, si: 18}, {par: 5, si: 2},
+                    {par: 4, si: 6}, {par: 4, si: 12}, {par: 3, si: 16}, {par: 4, si: 8},
+                    {par: 5, si: 14}, {par: 4, si: 9}, {par: 4, si: 3}, {par: 3, si: 17},
+                    {par: 5, si: 1}, {par: 4, si: 7}, {par: 4, si: 11}, {par: 4, si: 5},
+                    {par: 3, si: 15}, {par: 5, si: 13}
+                ]
+            },
+            'custom': {
+                name: 'Custom Course',
+                location: 'User Defined',
+                holes: Array(18).fill().map((_, i) => ({par: 4, si: i + 1}))
+            }
+        };
+
+        function toggleCustomCourse() {
+            const course = document.getElementById('course').value;
+            const customConfig = document.getElementById('customCourseConfig');
+            
+            if (course === 'custom') {
+                customConfig.classList.remove('hidden');
+                generateCustomHolesTable();
+            } else {
+                customConfig.classList.add('hidden');
+            }
+        }
+
+        function generateCustomHolesTable() {
+            const tbody = document.getElementById('customHolesTable');
+            let html = '';
+            
+            for (let i = 1; i <= 18; i++) {
+                html += `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 8px; text-align: center; font-weight: 600;">${i}</td>
+                        <td style="padding: 8px; text-align: center;">
+                            <select id="customPar${i}" style="width: 60px; padding: 4px; text-align: center;">
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </td>
+                        <td style="padding: 8px; text-align: center;">
+                            <input type="number" id="customSI${i}" min="1" max="18" value="${i}" 
+                                       style="width: 60px; padding: 4px; text-align: center;">
+                        </td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function resetCustomCourse() {
+            for (let i = 1; i <= 18; i++) {
+                document.getElementById(`customPar${i}`).value = '4';
+                document.getElementById(`customSI${i}`).value = i;
+            }
+        }
+
+        function autoGenerateSI() {
+            // Generate a realistic stroke index distribution
+            const siValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+            
+            // Shuffle array for random distribution
+            for (let i = siValues.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [siValues[i], siValues[j]] = [siValues[j], siValues[i]];
+            }
+            
+            // Assign to holes
+            for (let i = 1; i <= 18; i++) {
+                document.getElementById(`customSI${i}`).value = siValues[i - 1];
+            }
+        }
+
+        function validateCustomCourse() {
+            const name = document.getElementById('customCourseName').value.trim();
+            if (!name) {
+                alert('Please enter a course name');
+                return false;
+            }
+
+            // Check for duplicate stroke indexes
+            const siValues = [];
+            for (let i = 1; i <= 18; i++) {
+                const si = parseInt(document.getElementById(`customSI${i}`).value);
+                if (siValues.includes(si)) {
+                    alert(`Duplicate stroke index found: ${si}. Each hole must have a unique stroke index from 1-18.`);
+                    return false;
+                }
+                siValues.push(si);
+            }
+
+            // Check if all stroke indexes 1-18 are used
+            const sortedSI = siValues.sort((a, b) => a - b);
+            for (let i = 1; i <= 18; i++) {
+                if (!sortedSI.includes(i)) {
+                    alert(`Missing stroke index: ${i}. Please ensure all stroke indexes from 1-18 are used.`);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function buildCustomCourse() {
+            const name = document.getElementById('customCourseName').value.trim();
+            const location = document.getElementById('customCourseLocation').value.trim();
+            
+            const holes = [];
+            for (let i = 1; i <= 18; i++) {
+                const par = parseInt(document.getElementById(`customPar${i}`).value);
+                const si = parseInt(document.getElementById(`customSI${i}`).value);
+                holes.push({ par: par, si: si });
+            }
+
+            gameData.customCourse = {
+                name: name,
+                location: location,
+                holes: holes
+            };
+
+            return gameData.customCourse;
+        }
+
+        function setMode(mode) {
+            gameData.mode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.mode-btn').classList.add('active');
+
+            // If betterball is selected and less than 4 players, warn user
+            const numPlayers = parseInt(document.getElementById('numPlayers').value);
+            if (mode === 'betterball' && numPlayers < 4) {
+                alert('Betterball mode requires 4 players. Please select 4 players or switch to Individual mode.');
+                document.getElementById('numPlayers').value = '4'; // Force 4 players
+                togglePlayerInputs(); // Update player input visibility
+            }
+        }
+
+        function togglePlayerInputs() {
+            const numPlayers = parseInt(document.getElementById('numPlayers').value);
+            // Hide all player rows initially
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`player${i}Row`).classList.add('hidden');
+            }
+            // Show only the selected number of player rows
+            for (let i = 1; i <= numPlayers; i++) {
+                document.getElementById(`player${i}Row`).classList.remove('hidden');
+            }
+
+            // If Betterball mode is active and numPlayers is not 4, switch to Individual
+            if (gameData.mode === 'betterball' && numPlayers < 4) {
+                setMode('individual'); // This will also update the active button
+                alert('Betterball mode requires 4 players. Switching to Individual mode.');
+                document.querySelector('.mode-toggle .mode-btn.active').classList.remove('active');
+                document.querySelector('.mode-toggle .mode-btn[onclick="setMode(\'individual\')"]').classList.add('active');
+            }
+        }
+
+        function startGame() {
+            const course = document.getElementById('course').value;
+            if (!course) {
+                alert('Please select a course');
+                return;
+            }
+
+            gameData.course = course;
+            
+            // Handle custom course
+            if (course === 'custom') {
+                if (!validateCustomCourse()) {
+                    return;
+                }
+                buildCustomCourse();
+                gameData.holes = gameData.customCourse.holes;
+            } else {
+                gameData.holes = courseData[gameData.course].holes;
+            }
+            
+            // Collect player data based on numPlayers selection
+            gameData.players = [];
+            const numPlayersSelected = parseInt(document.getElementById('numPlayers').value);
+
+            for (let i = 1; i <= numPlayersSelected; i++) {
+                const name = document.getElementById(`player${i}Name`).value;
+                const handicap = parseInt(document.getElementById(`player${i}Handicap`).value) || 0;
+                if (!name) { // Ensure all selected players have names
+                    alert(`Please enter a name for Player ${i}.`);
+                    return;
+                }
+                gameData.players.push({
+                    id: i,
+                    name: name,
+                    handicap: handicap,
+                    team: i <= 2 ? 'A' : 'B' // Assign teams for up to 4 players
+                });
+            }
+
+            // If Betterball is selected, ensure 4 players
+            if (gameData.mode === 'betterball' && gameData.players.length !== 4) {
+                alert('Betterball mode requires exactly 4 players. Please adjust player count or switch to Individual mode.');
+                return; // Stop the game start
+            }
+
+            generateScorecard();
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('scorecard').classList.remove('hidden');
+        }
+
+        function generateScorecard() {
+            const table = document.getElementById('scorecardTable');
+            let courseInfo, courseName, courseLocation;
+            
+            // Handle custom course
+            if (gameData.course === 'custom' && gameData.customCourse) {
+                courseInfo = gameData.customCourse;
+                courseName = courseInfo.name;
+                courseLocation = courseInfo.location || '';
+            } else {
+                courseInfo = courseData[gameData.course];
+                courseName = courseInfo.name;
+                courseLocation = courseInfo.location || '';
+            }
+            
+            document.getElementById('scorecardTitle').textContent = `${courseName} ${courseLocation ? `(${courseLocation})` : ''} - ${gameData.mode === 'betterball' ? 'Betterball' : 'Individual'} Scorecard`;
+
+            let html = '<thead><tr><th>Hole</th>';
+            
+            // Add hole numbers
+            for (let i = 1; i <= 18; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += '<th>Total</th></tr>';
+
+            // Add par row
+            html += '<tr><th>Par</th>';
+            gameData.holes.forEach(hole => {
+                html += `<td>${hole.par}</td>`;
+            });
+            html += '<td>' + gameData.holes.reduce((sum, hole) => sum + hole.par, 0) + '</td></tr>';
+
+            // Add stroke index row
+            html += '<tr><th>SI</th>';
+            gameData.holes.forEach(hole => {
+                html += `<td>${hole.si}</td>`;
+            });
+            html += '<td>-</td></tr></thead><tbody>';
+
+            // Add player rows
+            gameData.players.forEach(player => {
+                html += `<tr><th>${player.name} (${player.handicap})</th>`;
+                for (let i = 1; i <= 18; i++) {
+                    html += `<td><input type="number" class="score-input" id="score_${player.id}_${i}" min="1" max="10" onchange="updateTotals()"></td>`;
+                }
+                html += `<td id="total_${player.id}">0</td></tr>`;
+                
+                // Add points row for each player
+                html += `<tr><th>${player.name} Points</th>`;
+                for (let i = 1; i <= 18; i++) {
+                    html += `<td id="points_${player.id}_${i}">0</td>`;
+                }
+                html += `<td id="totalPoints_${player.id}">0</td></tr>`;
+            });
+
+            // Add betterball rows if in betterball mode AND 4 players are present
+            if (gameData.mode === 'betterball' && gameData.players.length === 4) {
+                html += '<tr style="background-color: #e8f5e8;"><th><strong>Team A Best Points</strong></th>';
+                for (let i = 1; i <= 18; i++) {
+                    html += `<td id="teamA_${i}">-</td>`;
+                }
+                html += '<td id="teamA_total">0</td></tr>';
+
+                html += '<tr style="background-color: #fff3cd;"><th><strong>Team B Best Points</strong></th>';
+                for (let i = 1; i <= 18; i++) {
+                    html += `<td id="teamB_${i}">-</td>`;
+                }
+                html += '<td id="teamB_total">0</td></tr>';
+            }
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function updateTotals() {
+            gameData.players.forEach(player => {
+                let totalStrokes = 0;
+                let totalPoints = 0;
+
+                for (let hole = 1; hole <= 18; hole++) {
+                    const scoreInput = document.getElementById(`score_${player.id}_${hole}`);
+                    const score = parseInt(scoreInput.value) || 0;
+                    
+                    if (score > 0) {
+                        totalStrokes += score;
+                        
+                        // Calculate stableford points
+                        const par = gameData.holes[hole - 1].par;
+                        const si = gameData.holes[hole - 1].si;
+                        const handicapStrokes = Math.floor(player.handicap / 18) + (si <= (player.handicap % 18) ? 1 : 0);
+                        const netScore = score - handicapStrokes;
+                        
+                        let points = 0;
+                        if (netScore <= par - 2) points = 4;
+                        else if (netScore === par - 1) points = 3;
+                        else if (netScore === par) points = 2;
+                        else if (netScore === par + 1) points = 1;
+                        
+                        document.getElementById(`points_${player.id}_${hole}`).textContent = points;
+                        totalPoints += points;
+                    } else {
+                        // If score is 0 or empty, reset points for this hole
+                        document.getElementById(`points_${player.id}_${hole}`).textContent = 0;
+                    }
+                }
+
+                document.getElementById(`total_${player.id}`).textContent = totalStrokes;
+                document.getElementById(`totalPoints_${player.id}`).textContent = totalPoints;
+            });
+
+            // Update betterball scores only if in betterball mode AND 4 players are present
+            if (gameData.mode === 'betterball' && gameData.players.length === 4) {
+                updateBetterballScores();
+            }
+        }
+
+        function updateBetterballScores() {
+            let teamATotal = 0;
+            let teamBTotal = 0;
+
+            for (let hole = 1; hole <= 18; hole++) {
+                const teamAPlayers = gameData.players.filter(p => p.team === 'A');
+                const teamBPlayers = gameData.players.filter(p => p.team === 'B');
+
+                let teamABestPoints = 0; 
+                let teamBBestPoints = 0; 
+
+                // Find best points for Team A
+                teamAPlayers.forEach(player => {
+                    const pointsEl = document.getElementById(`points_${player.id}_${hole}`);
+                    const points = parseInt(pointsEl.textContent) || 0;
+                    if (points > teamABestPoints) {
+                        teamABestPoints = points;
+                    }
+                });
+
+                // Find best points for Team B
+                teamBPlayers.forEach(player => {
+                    const pointsEl = document.getElementById(`points_${player.id}_${hole}`);
+                    const points = parseInt(pointsEl.textContent) || 0;
+                    if (points > teamBBestPoints) {
+                        teamBBestPoints = points;
+                    }
+                });
+
+                document.getElementById(`teamA_${hole}`).textContent = teamABestPoints;
+                document.getElementById(`teamB_${hole}`).textContent = teamBBestPoints;
+
+                teamATotal += teamABestPoints;
+                teamBTotal += teamBBestPoints;
+            }
+
+            document.getElementById('teamA_total').textContent = teamATotal;
+            document.getElementById('teamB_total').textContent = teamBTotal;
+        }
+
+
+        function calculateScores() {
+            // This function is primarily for display and transition to summary
+            // The updateTotals() already calculates scores dynamically.
+            displaySummary();
+        }
+
+        function displaySummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            summaryContent.innerHTML = '';
+
+            // Individual Player Summaries
+            gameData.players.forEach(player => {
+                const totalStrokes = document.getElementById(`total_${player.id}`).textContent;
+                const totalPoints = document.getElementById(`totalPoints_${player.id}`).textContent;
+
+                const card = document.createElement('div');
+                card.className = 'summary-card';
+                card.innerHTML = `
+                    <h4>${player.name}</h4>
+                    <p><strong>Handicap:</strong> ${player.handicap}</p>
+                    <p><strong>Total Strokes:</strong> ${totalStrokes}</p>
+                    <p><strong>Total Stableford Points:</strong> ${totalPoints}</p>
+                `;
+                summaryContent.appendChild(card);
+            });
+
+            // Betterball Summary
+            if (gameData.mode === 'betterball' && gameData.players.length === 4) {
+                const teamATotal = document.getElementById('teamA_total').textContent;
+                const teamBTotal = document.getElementById('teamB_total').textContent;
+
+                const teamASummaryCard = document.createElement('div');
+                teamASummaryCard.className = 'summary-card team-summary';
+                teamASummaryCard.innerHTML = `
+                    <h4>Team A Summary</h4>
+                    <p><strong>Players:</strong> ${gameData.players.filter(p => p.team === 'A').map(p => p.name).join(', ')}</p>
+                    <p><strong>Total Betterball Points:</strong> ${teamATotal}</p>
+                `;
+                summaryContent.appendChild(teamASummaryCard);
+
+                const teamBSummaryCard = document.createElement('div');
+                teamBSummaryCard.className = 'summary-card team-summary';
+                teamBSummaryCard.innerHTML = `
+                    <h4>Team B Summary</h4>
+                    <p><strong>Players:</strong> ${gameData.players.filter(p => p.team === 'B').map(p => p.name).join(', ')}</p>
+                    <p><strong>Total Betterball Points:</strong> ${teamBTotal}</p>
+                `;
+                summaryContent.appendChild(teamBSummaryCard);
+
+                // Determine Betterball Winner
+                const betterballWinnerCard = document.createElement('div');
+                betterballWinnerCard.className = 'summary-card team-summary';
+                if (parseInt(teamATotal) > parseInt(teamBTotal)) {
+                    betterballWinnerCard.innerHTML = `<h4>🏆 Team A Wins!</h4><p>With a score of ${teamATotal} points.</p>`;
+                } else if (parseInt(teamBTotal) > parseInt(teamATotal)) {
+                    betterballWinnerCard.innerHTML = `<h4>🏆 Team B Wins!</h4><p>With a score of ${teamBTotal} points.</p>`;
+                } else {
+                    betterballWinnerCard.innerHTML = `<h4>🤝 It's a Tie!</h4><p>Both teams scored ${teamATotal} points.</p>`;
+                }
+                summaryContent.appendChild(betterballWinnerCard);
+            } else {
+                // Determine Individual Winner (or simply display stats if only one player)
+                let winner = { name: '', points: -1 };
+                if (gameData.players.length > 0) {
+                    gameData.players.forEach(player => {
+                        const totalPoints = parseInt(document.getElementById(`totalPoints_${player.id}`).textContent);
+                        if (totalPoints > winner.points) {
+                            winner.name = player.name;
+                            winner.points = totalPoints;
+                        }
+                    });
+
+                    const individualSummaryCard = document.createElement('div');
+                    individualSummaryCard.className = 'summary-card';
+                    individualSummaryCard.style.borderLeftColor = '#ffc107'; 
+                    if (gameData.players.length === 1) {
+                         individualSummaryCard.innerHTML = `<h4>🎉 Game Completed!</h4><p><strong>${winner.name}</strong> scored a total of <strong>${winner.points} Stableford points!</strong></p>`;
+                    } else {
+                         individualSummaryCard.innerHTML = `<h4>🏆 Individual Winner: ${winner.name}</h4><p>With a total of ${winner.points} Stableford points!</p>`;
+                    }
+                    summaryContent.appendChild(individualSummaryCard);
+                }
+            }
+
+
+            document.getElementById('scorecard').classList.add('hidden');
+            document.getElementById('summary').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            gameData = {
+                course: '',
+                mode: 'individual',
+                players: [],
+                <span style="background-color:rgba(255, 255, 0, 0.4)">holes: [],</span>
+                scores: {},
+                customCourse: null
+            };
+            document.getElementById('setup').classList.remove('hidden');
+            document.getElementById('scorecard').classList.add('hidden');
+            document.getElementById('summary').classList.add('hidden');
+
+            // Reset form fields
+            document.getElementById('course').value = '';
+            document.getElementById('customCourseConfig').classList.add('hidden');
+            document.getElementById('customCourseName').value = '';
+            document.getElementById('customCourseLocation').value = '';
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.mode-toggle .mode-btn').classList.add('active'); // Set individual as default
+
+            document.getElementById('numPlayers').value = '4'; // Reset to 4 players by default
+            togglePlayerInputs(); // Update player input visibility based on default
+
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`player${i}Name`).value = '';
+                document.getElementById(`player${i}Handicap`).value = '0';
+            }
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const courseName = gameData.course === 'custom' && gameData.customCourse ? gameData.customCourse.name : courseData[gameData.course].name;
+            const courseLocation = gameData.course === 'custom' && gameData.customCourse ? gameData.customCourse.location : courseData[gameData.course].location;
+
+            doc.setFontSize(18);
+            doc.text(`Golf Scorecard - ${courseName}`, 10, 10);
+            doc.setFontSize(12);
+            doc.text(`${courseLocation ? `Location: ${courseLocation} | ` : ''}Game Mode: ${gameData.mode === 'betterball' ? 'Betterball' : 'Individual'}`, 10, 20);
+
+            let y = 30;
+
+            // Course Par and SI
+            doc.setFontSize(10);
+            doc.text('Hole:', 10, y + 10);
+            gameData.holes.forEach((_, i) => doc.text((i + 1).toString(), 30 + (i * 8), y + 10));
+            doc.text('Total', 30 + (18 * 8), y + 10);
+            y += 5;
+            doc.text('Par:', 10, y + 10);
+            gameData.holes.forEach((hole, i) => doc.text(hole.par.toString(), 30 + (i * 8), y + 10));
+            doc.text(gameData.holes.reduce((sum, hole) => sum + hole.par, 0).toString(), 30 + (18 * 8), y + 10);
+            y += 5;
+            doc.text('SI:', 10, y + 10);
+            gameData.holes.forEach((hole, i) => doc.text(hole.si.toString(), 30 + (i * 8), y + 10));
+            doc.text('-', 30 + (18 * 8), y + 10);
+            y += 15;
+
+            // Player Scores and Points
+            gameData.players.forEach(player => {
+                doc.text(`Player: ${player.name} (Handicap: ${player.handicap})`, 10, y);
+                y += 5;
+                doc.text('Strokes:', 10, y + 5);
+                let totalStrokes = 0;
+                let totalPoints = 0;
+                for (let i = 1; i <= 18; i++) {
+                    const score = parseInt(document.getElementById(`score_${player.id}_${i}`).value) || 0;
+                    const points = parseInt(document.getElementById(`points_${player.id}_${i}`).textContent) || 0;
+                    doc.text(score.toString(), 30 + ((i - 1) * 8), y + 5);
+                    totalStrokes += score;
+                    totalPoints += points;
+                }
+                doc.text(totalStrokes.toString(), 30 + (18 * 8), y + 5);
+                y += 5;
+                doc.text('Points:', 10, y + 5);
+                for (let i = 1; i <= 18; i++) {
+                    const points = parseInt(document.getElementById(`points_${player.id}_${i}`).textContent) || 0;
+                    doc.text(points.toString(), 30 + ((i - 1) * 8), y + 5);
+                }
+                doc.text(totalPoints.toString(), 30 + (18 * 8), y + 5);
+                y += 15;
+            });
+
+            // Betterball Summary if applicable
+            if (gameData.mode === 'betterball' && gameData.players.length === 4) {
+                doc.setFontSize(12);
+                doc.text('Betterball Summary', 10, y);
+                y += 10;
+
+                doc.text('Team A Best Points:', 10, y + 5);
+                let teamATotal = 0;
+                for (let i = 1; i <= 18; i++) {
+                    const points = parseInt(document.getElementById(`teamA_${i}`).textContent) || 0;
+                    doc.text(points.toString(), 30 + ((i - 1) * 8), y + 5);
+                    teamATotal += points;
+                }
+                doc.text(teamATotal.toString(), 30 + (18 * 8), y + 5);
+                y += 5;
+
+                doc.text('Team B Best Points:', 10, y + 5);
+                let teamBTotal = 0;
+                for (let i = 1; i <= 18; i++) {
+                    const points = parseInt(document.getElementById(`teamB_${i}`).textContent) || 0;
+                    doc.text(points.toString(), 30 + ((i - 1) * 8), y + 5);
+                    teamBTotal += points;
+                }
+                doc.text(teamBTotal.toString(), 30 + (18 * 8), y + 5);
+                y += 15;
+
+                let betterballWinnerText = '';
+                if (parseInt(teamATotal) > parseInt(teamBTotal)) {
+                    betterballWinnerText = `Team A Wins with ${teamATotal} points!`;
+                } else if (parseInt(teamBTotal) > parseInt(teamATotal)) {
+                    betterballWinnerText = `Team B Wins with ${teamBTotal} points!`;
+                } else {
+                    betterballWinnerText = `It's a Tie! Both teams scored ${teamATotal} points.`;
+                }
+                doc.text(betterballWinnerText, 10, y);
+                y += 10;
+
+            } else {
+                // Individual winner for PDF (only if 1 or more players)
+                if (gameData.players.length > 0) {
+                    let winner = { name: 'N/A', points: -1 };
+                    gameData.players.forEach(player => {
+                        const totalPoints = parseInt(document.getElementById(`totalPoints_${player.id}`).textContent);
+                        if (totalPoints > winner.points) {
+                            winner.name = player.name;
+                            winner.points = totalPoints;
+                        }
+                    });
+                     doc.setFontSize(12);
+                     if (gameData.players.length === 1) {
+                         doc.text(`${winner.name} scored ${winner.points} Stableford points.`, 10, y);
+                     } else {
+                         doc.text(`Individual Winner: ${winner.name} (${winner.points} Stableford points)`, 10, y);
+                     }
+                    y += 10;
+                }
+            }
+            
+            doc.save(`${courseName.replace(/\s/g, '_')}_Golf_Scorecard.pdf`);
+        }
+
+        function exportToExcel() {
+            let data = [];
+            const courseName = gameData.course === 'custom' && gameData.customCourse ? gameData.customCourse.name : courseData[gameData.course].name;
+            const courseLocation = gameData.course === 'custom' && gameData.customCourse ? gameData.customCourse.location : courseData[gameData.course].location;
+
+            // Header Row
+            data.push([`Golf Scorecard for ${courseName} ${courseLocation ? `(${courseLocation})` : ''}`]);
+            data.push([`Game Mode: ${gameData.mode === 'betterball' ? 'Betterball' : 'Individual'}`]);
+            data.push([]); // Empty row for spacing
+
+            // Hole details
+            let holeRow = ['Hole'];
+            let parRow = ['Par'];
+            let siRow = ['SI'];
+            for (let i = 1; i <= 18; i++) {
+                holeRow.push(i);
+                parRow.push(gameData.holes[i - 1].par);
+                siRow.push(gameData.holes[i - 1].si);
+            }
+            holeRow.push('Total');
+            parRow.push(gameData.holes.reduce((sum, hole) => sum + hole.par, 0));
+            siRow.push(''); // SI total not applicable
+
+            data.push(holeRow, parRow, siRow);
+            data.push([]); // Empty row for spacing
+
+            // Player data
+            gameData.players.forEach(player => {
+                let playerScoreRow = [`${player.name} (Hcp: ${player.handicap}) Strokes`];
+                let playerPointsRow = [`${player.name} Points`];
+                let totalStrokes = 0;
+                let totalPoints = 0;
+
+                for (let i = 1; i <= 18; i++) {
+                    const score = parseInt(document.getElementById(`score_${player.id}_${i}`).value) || 0;
+                    const points = parseInt(document.getElementById(`points_${player.id}_${i}`).textContent) || 0;
+                    playerScoreRow.push(score);
+                    playerPointsRow.push(points);
+                    totalStrokes += score;
+                    totalPoints += points;
+                }
+                playerScoreRow.push(totalStrokes);
+                playerPointsRow.push(totalPoints);
+                data.push(playerScoreRow, playerPointsRow);
+                data.push([]); // Empty row for spacing
+            });
+
+            // Betterball data if applicable
+            if (gameData.mode === 'betterball' && gameData.players.length === 4) {
+                data.push(['Betterball Summary']);
+                let teamA_points = ['Team A Best Points'];
+                let teamB_points = ['Team B Best Points'];
+                let teamATotal = 0;
+                let teamBTotal = 0;
+
+                for (let i = 1; i <= 18; i++) {
+                    const teamA_score = parseInt(document.getElementById(`teamA_${i}`).textContent) || 0;
+                    const teamB_score = parseInt(document.getElementById(`teamB_${i}`).textContent) || 0;
+                    teamA_points.push(teamA_score);
+                    teamB_points.push(teamB_score);
+                    teamATotal += teamA_score;
+                    teamBTotal += teamB_score;
+                }
+                teamA_points.push(teamATotal);
+                teamB_points.push(teamBTotal);
+                data.push(teamA_points, teamB_points);
+                data.push([]); // Empty row for spacing
+
+                let betterballWinnerText = '';
+                if (parseInt(teamATotal) > parseInt(teamBTotal)) {
+                    betterballWinnerText = `Team A Wins with ${teamATotal} points!`;
+                } else if (parseInt(teamBTotal) > parseInt(teamATotal)) {
+                    betterballWinnerText = `Team B Wins with ${teamBTotal} points!`;
+                } else {
+                    betterballWinnerText = `It's a Tie! Both teams scored ${teamATotal} points.`;
+                }
+                data.push([betterballWinnerText]);
+            } else {
+                // Individual winner for Excel (only if 1 or more players)
+                if (gameData.players.length > 0) {
+                    let winner = { name: 'N/A', points: -1 };
+                    gameData.players.forEach(player => {
+                        const totalPoints = parseInt(document.getElementById(`totalPoints_${player.id}`).textContent);
+                        if (totalPoints > winner.points) {
+                            winner.name = player.name;
+                            winner.points = totalPoints;
+                        }
+                    });
+                    if (gameData.players.length === 1) {
+                         data.push([`${winner.name} scored ${winner.points} Stableford points.`]);
+                    } else {
+                         data.push([`Individual Winner: ${winner.name} (${winner.points} Stableford points)`]);
+                    }
+                }
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Golf Scorecard");
+            XLSX.writeFile(wb, `${courseName.replace(/\s/g, '_')}_Golf_Scorecard.xlsx`);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            togglePlayerInputs(); // Set initial visibility based on default (4 players)
+            if (document.getElementById('course').value === 'custom') {
+                toggleCustomCourse();
+            }
+        });
+
+    </script>
+</body>
+</html>
